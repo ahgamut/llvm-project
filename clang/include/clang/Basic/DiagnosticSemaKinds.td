@@ -69,6 +69,8 @@ def note_cast_to_void : Note<"cast expression to void to silence warning">;
 def note_cast_operand_to_int : Note<"cast one or both operands to int to silence this warning">;
 
 // Constant expressions
+def note_expr_not_ice : Note<
+  "expression is not an integer constant expression">;
 def err_expr_not_ice : Error<
   "expression is not an %select{integer|integral}0 constant expression">;
 def ext_expr_not_ice : Extension<

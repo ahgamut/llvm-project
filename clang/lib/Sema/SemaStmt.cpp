@@ -80,7 +80,28 @@ StmtResult Sema::ActOnDeclStmt(DeclGroupPtrTy dg, SourceLocation StartLoc,
   // If we have an invalid decl, just return an error.
   if (DG.isNull()) return StmtError();
 
-  return new (Context) DeclStmt(DG, StartLoc, EndLoc);
+  DeclStmt *res = new (Context) DeclStmt(DG, StartLoc, EndLoc);
+  if (getLangOpts().PortCosmo && !getLangOpts().CPlusPlus) {
+    // C++ can rewrite the local structs, but it also adds
+    // calls to __cxa_guard_acquire / release, which cause
+    // issues at the linker stage when the struct is in C.
+    bool needsInitRewrite = false;
+    for (auto it = DG.begin(); it != DG.end(); ++it) {
+      VarDecl *vd = cast<VarDecl>(*it);
+      if (!vd->hasInit()) {
+          continue;
+      }
+      Expr *Init = vd->getInit();
+      if (vd->isStaticLocal() && !Init->isConstantInitializer(Context, false)) {
+        needsInitRewrite = true;
+        break;
+      }
+    }
+    if (needsInitRewrite) {
+       return RewriteStaticDeclStmt(res);
+    }
+  }
+  return res;
 }
 
 void Sema::ActOnForEachDeclStmt(DeclGroupPtrTy dg) {
@@ -515,6 +536,17 @@ Sema::ActOnCaseExpr(SourceLocation CaseLoc, ExprResult Val) {
   if (!CondExpr)
     return ExprError();
   QualType CondType = CondExpr->getType();
+  SwitchStmt *sws = (SwitchStmt*)getCurFunction()->SwitchStack.back().getPointer();
+  class NoteNonConstDiagnoser : public VerifyICEDiagnoser {
+  public:
+    SemaDiagnosticBuilder diagnoseNotICEType(Sema &S, SourceLocation Loc,
+                                             QualType T) override {
+      return diagnoseNotICE(S, Loc);
+    }
+    SemaDiagnosticBuilder diagnoseNotICE(Sema &S, SourceLocation Loc) override {
+      return S.Diag(Loc, diag::note_expr_not_ice);
+    }
+  } Diagnoser;
 
   auto CheckAndFinish = [&](Expr *E) {
     if (CondType->isDependentType() || E->isTypeDependent())
@@ -529,14 +561,23 @@ Sema::ActOnCaseExpr(SourceLocation CaseLoc, ExprResult Val) {
     }
 
     ExprResult ER = E;
-    if (!E->isValueDependent())
-      ER = VerifyIntegerConstantExpression(E, AllowFold);
+    if (getLangOpts().PortCosmo) {
+      if (!E->isValueDependent())
+        ER = VerifyIntegerConstantExpression(E, nullptr, Diagnoser, AllowFold);
+    } else {
+      if (!E->isValueDependent())
+        ER = VerifyIntegerConstantExpression(E, AllowFold);
+    }
     if (!ER.isInvalid())
       ER = DefaultLvalueConversion(ER.get());
     if (!ER.isInvalid())
       ER = ImpCastExprToType(ER.get(), CondType, CK_IntegralCast);
     if (!ER.isInvalid())
       ER = ActOnFinishFullExpr(ER.get(), ER.get()->getExprLoc(), false);
+    if (getLangOpts().PortCosmo && ER.isInvalid()) {
+      sws->setNonConstCaseExists();
+      ER = E;
+    }
     return ER;
   };
 
@@ -1326,6 +1367,18 @@ Sema::ActOnFinishSwitchStmt(SourceLocation SwitchLoc, Stmt *Switch,
   }
 
   SS->setBody(BodyStmt, SwitchLoc);
+
+  if (SS->nonConstCaseExists()) {
+    if (getLangOpts().PortCosmo) {
+      return RewriteSwitchToIfStmt(SwitchLoc, Switch,
+              BodyStmt, CaseListIsIncomplete);
+    } else {
+      return StmtError(
+        Diag(SS->getBeginLoc(),
+        diag::err_duplicate_case_differing_expr)
+      );
+    }
+  }
 
   Expr *CondExpr = SS->getCond();
   if (!CondExpr) return StmtError();

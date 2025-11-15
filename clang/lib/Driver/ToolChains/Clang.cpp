@@ -5207,6 +5207,11 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     }
   }
 
+  for (const Arg *A : Args.filtered(options::OPT_fportcosmo)) {
+    CmdArgs.push_back("-fportcosmo");
+    A->claim();
+  }
+
   // Unconditionally claim the printf option now to avoid unused diagnostic.
   if (const Arg *PF = Args.getLastArg(options::OPT_mprintf_kind_EQ))
     PF->claim();

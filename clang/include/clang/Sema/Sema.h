@@ -501,6 +501,7 @@ class Sema final : public SemaBase {
   // 33. Types (SemaType.cpp)
   // 34. FixIt Helpers (SemaFixItUtils.cpp)
   // 35. Function Effects (SemaFunctionEffects.cpp)
+  // 36. AST Rewriting for -fportcosmo (SemaPortCosmo.cpp)
 
   /// \name Semantic Analysis
   /// Implementations are in Sema.cpp
@@ -10669,6 +10670,7 @@ public:
 
   StmtResult ActOnDeclStmt(DeclGroupPtrTy Decl, SourceLocation StartLoc,
                            SourceLocation EndLoc);
+  StmtResult RewriteStaticDeclStmt(Stmt *S);
   void ActOnForEachDeclStmt(DeclGroupPtrTy Decl);
 
 
@@ -10729,6 +10731,8 @@ public:
                                     SourceLocation RParenLoc);
   StmtResult ActOnFinishSwitchStmt(SourceLocation SwitchLoc, Stmt *Switch,
                                    Stmt *Body);
+  StmtResult RewriteSwitchToIfStmt(SourceLocation SwitchLoc, Stmt *Switch,
+                                   Stmt *Body, bool CaseListIsIncomplete);
 
   /// DiagnoseAssignmentEnum - Warn if assignment to enum is a constant
   /// integer not in the range of enum values.

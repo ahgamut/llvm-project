@@ -13718,7 +13718,11 @@ void Sema::AddInitializerToDecl(Decl *RealDecl, Expr *Init, bool DirectInit) {
     // C99 6.7.8p4: All the expressions in an initializer for an object that has
     // static storage duration shall be constant expressions or string literals.
     } else if (VDecl->getStorageClass() == SC_Static) {
-      CheckForConstantInitializer(Init);
+      if (getLangOpts().PortCosmo) {
+        // TODO (ahgamut): diagnostic note / warning here
+      } else {
+        CheckForConstantInitializer(Init);
+      }
 
       // C89 is stricter than C99 for aggregate initializers.
       // C89 6.5.7p3: All the expressions [...] in an initializer list
@@ -13857,7 +13861,7 @@ void Sema::AddInitializerToDecl(Decl *RealDecl, Expr *Init, bool DirectInit) {
 
     // C99 6.7.8p4. All file scoped initializers need to be constant.
     // Avoid duplicate diagnostics for constexpr variables.
-    if (!getLangOpts().CPlusPlus && !VDecl->isInvalidDecl() &&
+    if (!getLangOpts().CPlusPlus && !getLangOpts().PortCosmo && !VDecl->isInvalidDecl() &&
         !VDecl->isConstexpr())
       CheckForConstantInitializer(Init);
   }

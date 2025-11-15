@@ -653,6 +653,9 @@ CodeGenModule::EmitCXXGlobalVarDeclInitFunc(const VarDecl *D,
          getTarget().getTriple().isOSBinFormatWasm())) {
       Fn->setComdat(C);
     }
+  } else if (getLangOpts().PortCosmo) {
+    // TODO (ahgamut): check if other branches affect init order
+    AddGlobalCtor(Fn, 0);
   } else {
     I = DelayedCXXInitPosition.find(D); // Re-do lookup in case of re-hash.
     if (I == DelayedCXXInitPosition.end()) {

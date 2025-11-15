@@ -3621,6 +3621,10 @@ defm disable_block_signature_string : BoolFOption<"disable-block-signature-strin
   NegFlag<SetFalse, [], [ClangOption], "Don't disable">,
   BothFlags<[], [CC1Option], " block signature string)">>;
 
+def fportcosmo : Flag<["-"], "fportcosmo">, Group<f_Group>,
+  Visibility<[ClangOption, CC1Option, CLOption]>,
+  HelpText<"Enable AST Rewriting for Cosmopolitan Libc magic numbers.">,
+  MarshallingInfoFlag<LangOpts<"PortCosmo">>;
 def fomit_frame_pointer : Flag<["-"], "fomit-frame-pointer">, Group<f_Group>,
   Visibility<[ClangOption, FlangOption]>,
   HelpText<"Omit the frame pointer from functions that don't need it. "

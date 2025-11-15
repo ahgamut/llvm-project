@@ -220,6 +220,10 @@ protected:
     LLVM_PREFERRED_TYPE(bool)
     unsigned HasVar : 1;
 
+    /// True if a non-const case exists inside the SwitchStmt.
+    LLVM_PREFERRED_TYPE(bool)
+    unsigned NonConstCaseExists : 1;
+
     /// If the SwitchStmt is a switch on an enum value, records whether all
     /// the enum values were covered by CaseStmts.  The coverage information
     /// value is meant to be a hint for possible clients.
@@ -2581,6 +2585,11 @@ public:
   bool isAllEnumCasesCovered() const {
     return SwitchStmtBits.AllEnumCasesCovered;
   }
+
+  /// True if this SwitchStmt has not-compile-time const case values
+  bool nonConstCaseExists() const { return SwitchStmtBits.NonConstCaseExists; }
+
+  void setNonConstCaseExists() { SwitchStmtBits.NonConstCaseExists = true; }
 
   SourceLocation getBeginLoc() const { return getSwitchLoc(); }
   SourceLocation getEndLoc() const LLVM_READONLY {

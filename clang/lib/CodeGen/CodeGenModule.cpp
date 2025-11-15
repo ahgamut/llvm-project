@@ -5579,7 +5579,11 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
       if (D->getType()->isReferenceType())
         T = D->getType();
 
-      if (getLangOpts().CPlusPlus) {
+      if (getLangOpts().PortCosmo) {
+        Init = EmitNullConstant(T);
+        if (!IsDefinitionAvailableExternally)
+          NeedsGlobalCtor = true;
+      } else if (getLangOpts().CPlusPlus) {
         Init = EmitNullConstant(T);
         if (!IsDefinitionAvailableExternally)
           NeedsGlobalCtor = true;
