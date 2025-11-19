@@ -1,3 +1,43 @@
+# `-fportcosmo`: patching `clang` to build C software with Cosmopolitan Libc
+
+This patch is the LLVM equivalent of my [gcc patch][gccpatch] to simplify
+building software with Cosmopolitan Libc. It may not be necessary to patch
+compilers now that [most constants in Cosmopolitan Libc are compile-time
+again][cosmoconst], but I think this was still a useful exercise, and now I know
+something about LLVM internals. You can clone the repo and build `clang` as
+usual to get this feature.
+
+## How does it work?
+
+`-fportcosmo` works by rewriting the AST. Think of it as a "context-sensitive
+LISP-y `defmacro` error handler", that activates before `clang` can trigger a
+`switch case is not constant` or `initializer element is not constant` error.
+
+* the error is triggered because `clang` expects the case or initializer to be a
+  compile-time constant, which it isn't
+* this patch ignores the error when `-fportcosmo`, and immediately rewrites the
+  necessary statements before further analysis occurs in the `Sema` calls.
+* this patch walks through the AST rewriting necessary subtrees: `switch`
+  statements are rewritten into `if` statements (with appropriate `goto`s to
+  handle fallthroughs/`break` statements, and `struct` initializers are appended
+  with one-time initializations (via `__attribute__((constructor))` for globals
+  or an `if` for locals). No other part of the code being compiled is affected.
+
+For an extended explanation, refer to the three READMEs [with my
+gcc plugin][plugin].  Note that this patch currently does not work with: 
+
+* `constexpr` initializations
+* `enum`s (rewrite to `#define`s instead), or 
+* wacky situtations where `SIGTERM` is used as an array index within an
+  initializer
+
+Finally, remember this patch is just a convenience -- you could always rewrite
+the `switch` statements and `struct` initializers manually.
+
+[gccpatch]: github.com/ahgamut/gcc/tree/portcosmo-14.1
+[cosmoconst]: https://github.com/jart/cosmopolitan/commit/5ddb5c2adad79407fb800fce47f389611f90a511
+[plugin]: https://github.com/ahgamut/cosmo-gcc-plugin
+
 # The LLVM Compiler Infrastructure
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)
