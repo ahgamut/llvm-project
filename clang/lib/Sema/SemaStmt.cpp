@@ -98,6 +98,7 @@ StmtResult Sema::ActOnDeclStmt(DeclGroupPtrTy dg, SourceLocation StartLoc,
       }
     }
     if (needsInitRewrite) {
+       Diag(StartLoc, diag::note_nonconst_initializer);
        return RewriteStaticDeclStmt(res);
     }
   }
@@ -544,7 +545,7 @@ Sema::ActOnCaseExpr(SourceLocation CaseLoc, ExprResult Val) {
       return diagnoseNotICE(S, Loc);
     }
     SemaDiagnosticBuilder diagnoseNotICE(Sema &S, SourceLocation Loc) override {
-      return S.Diag(Loc, diag::note_expr_not_ice);
+      return S.Diag(Loc, diag::note_nonconst_switch);
     }
   } Diagnoser;
 
@@ -1370,6 +1371,7 @@ Sema::ActOnFinishSwitchStmt(SourceLocation SwitchLoc, Stmt *Switch,
 
   if (SS->nonConstCaseExists()) {
     if (getLangOpts().PortCosmo) {
+      Diag(SS->getBeginLoc(), diag::note_nonconst_switch);
       return RewriteSwitchToIfStmt(SwitchLoc, Switch,
               BodyStmt, CaseListIsIncomplete);
     } else {
