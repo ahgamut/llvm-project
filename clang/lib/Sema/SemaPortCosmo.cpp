@@ -316,8 +316,8 @@ static StmtResult createInitStructMemcpy(VarDecl *dst, VarDecl *src,
       SemaRef.Context.getTypeSize(SizeType),
       SemaRef.Context.getTypeSizeInChars(src->getType()).getQuantity());
   //
-  const QualType flagType = SemaRef.Context.UnsignedIntTy;
-  llvm::APInt flagOne(8, 1);
+  const QualType flagType = SemaRef.Context.UnsignedShortTy;
+  llvm::APInt flagOne(SemaRef.Context.getTypeSize(flagType), 1);
   Expr *One = IntegerLiteral::Create(SemaRef.Context, flagOne, flagType,
                                      SourceLocation());
   // flag != 1
@@ -388,8 +388,8 @@ StmtResult Sema::RewriteStaticDeclStmt(Stmt *S) {
   DeclGroupRef DG = DS->getDeclGroup();
   std::stringstream nameStream;
   std::vector<Stmt *> rparts;
-  const QualType flagType = Context.UnsignedIntTy;
-  llvm::APInt flagZero(8, 0);
+  const QualType flagType = Context.UnsignedShortTy;
+  llvm::APInt flagZero(Context.getTypeSize(flagType), 0);
   VarDecl *vd = nullptr;
   QualType varType;
   DeclGroupRef dgr;

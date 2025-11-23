@@ -13720,7 +13720,6 @@ void Sema::AddInitializerToDecl(Decl *RealDecl, Expr *Init, bool DirectInit) {
     } else if (VDecl->getStorageClass() == SC_Static) {
       if (getLangOpts().PortCosmo) {
         // TODO (ahgamut): diagnostic note / warning here
-        Diag(VDecl->getBeginLoc(), diag::note_nonconst_initializer);
       } else {
         CheckForConstantInitializer(Init);
       }
