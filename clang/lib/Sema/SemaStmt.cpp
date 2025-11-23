@@ -87,7 +87,10 @@ StmtResult Sema::ActOnDeclStmt(DeclGroupPtrTy dg, SourceLocation StartLoc,
     // issues at the linker stage when the struct is in C.
     bool needsInitRewrite = false;
     for (auto it = DG.begin(); it != DG.end(); ++it) {
-      VarDecl *vd = cast<VarDecl>(*it);
+      if (!isa<VarDecl>(*it)) {
+          continue;
+      }
+      VarDecl *vd = dyn_cast<VarDecl>(*it);
       if (!vd->hasInit()) {
           continue;
       }

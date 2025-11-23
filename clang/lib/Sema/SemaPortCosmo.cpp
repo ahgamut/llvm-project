@@ -406,6 +406,9 @@ StmtResult Sema::RewriteStaticDeclStmt(Stmt *S) {
   };
 
   for (auto it = DG.begin(); it != DG.end(); ++it) {
+    if (!isa<VarDecl>(*it)) {
+      continue;
+    }
     vd = cast<VarDecl>(*it);
     varType = vd->getType();
     DC = vd->getDeclContext();
