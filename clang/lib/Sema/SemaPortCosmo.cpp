@@ -278,6 +278,36 @@ struct PortCosmoSwitchToIf : TreeTransform<PortCosmoSwitchToIf> {
     return RebuildGotoStmt(S->getBeginLoc(), S->getEndLoc(),
                            swEndLabel->getDecl());
   }
+
+  StmtResult TransformAttributedStmt(AttributedStmt *S, StmtDiscardKind SDK) {
+    StmtResult SubStmt = getDerived().TransformStmt(S->getSubStmt(), SDK);
+    if (SubStmt.isInvalid())
+      return StmtError();
+
+    bool AttrsChanged = false;
+    SmallVector<const Attr *, 1> Attrs;
+
+    for (const auto *I : S->getAttrs()) {
+      const Attr *R = TransformStmtAttr(S->getSubStmt(), SubStmt.get(), I);
+      if (!R) {
+        continue;
+      }
+      if (isa<FallThroughAttr>(R)) {
+        AttrsChanged = true;
+        continue;
+      }
+      AttrsChanged |= (I != R);
+      Attrs.push_back(R);
+    }
+
+    if (SubStmt.get() == S->getSubStmt() && !AttrsChanged)
+      return S;
+
+    if (Attrs.empty())
+      return SubStmt;
+
+    return RebuildAttributedStmt(S->getAttrLoc(), Attrs, SubStmt.get());
+  }
 };
 
 StmtResult Sema::RewriteSwitchToIfStmt(SourceLocation SwitchLoc, Stmt *Switch,
