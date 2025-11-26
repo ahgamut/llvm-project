@@ -568,19 +568,19 @@ Sema::ActOnCaseExpr(SourceLocation CaseLoc, ExprResult Val) {
     if (getLangOpts().PortCosmo) {
       if (!E->isValueDependent())
         ER = VerifyIntegerConstantExpression(E, nullptr, Diagnoser, AllowFold);
+      if (ER.isInvalid()) {
+        sws->setNonConstCaseExists();
+        ER = E;
+      }
     } else {
       if (!E->isValueDependent())
         ER = VerifyIntegerConstantExpression(E, AllowFold);
-    }
-    if (!ER.isInvalid())
-      ER = DefaultLvalueConversion(ER.get());
-    if (!ER.isInvalid())
-      ER = ImpCastExprToType(ER.get(), CondType, CK_IntegralCast);
-    if (!ER.isInvalid())
-      ER = ActOnFinishFullExpr(ER.get(), ER.get()->getExprLoc(), false);
-    if (getLangOpts().PortCosmo && ER.isInvalid()) {
-      sws->setNonConstCaseExists();
-      ER = E;
+      if (!ER.isInvalid())
+        ER = DefaultLvalueConversion(ER.get());
+      if (!ER.isInvalid())
+        ER = ImpCastExprToType(ER.get(), CondType, CK_IntegralCast);
+      if (!ER.isInvalid())
+        ER = ActOnFinishFullExpr(ER.get(), ER.get()->getExprLoc(), false);
     }
     return ER;
   };
@@ -1375,13 +1375,10 @@ Sema::ActOnFinishSwitchStmt(SourceLocation SwitchLoc, Stmt *Switch,
   if (SS->nonConstCaseExists()) {
     if (getLangOpts().PortCosmo) {
       Diag(SS->getBeginLoc(), diag::note_nonconst_switch);
-      return RewriteSwitchToIfStmt(SwitchLoc, Switch,
-              BodyStmt, CaseListIsIncomplete);
+      return RewriteSwitchToIfStmt(SwitchLoc, Switch, BodyStmt,
+                                   CaseListIsIncomplete);
     } else {
-      return StmtError(
-        Diag(SS->getBeginLoc(),
-        diag::err_duplicate_case_differing_expr)
-      );
+      return StmtError(Diag(SS->getBeginLoc(), diag::err_nonconst_switch));
     }
   }
 

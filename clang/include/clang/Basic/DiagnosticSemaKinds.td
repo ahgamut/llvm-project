@@ -12913,6 +12913,7 @@ def note_amdgcn_global_load_lds_size_valid_value : Note<"size must be %select{1,
 def note_expr_not_ice : Note<
   "expression is not an integer constant expression">;
 def note_nonconst_switch : Note<"rewriting switch with non-const cases">;
+def err_nonconst_switch : Error<"switch statement contains non-const cases, pass -fportcosmo">;
 def note_nonconst_initializer : Note<
   "rewriting initializer with non-const elements">;
 } // end of sema component.
